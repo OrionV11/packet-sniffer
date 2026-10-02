@@ -38,7 +38,7 @@ class ARPAnalyzer(PacketAnalyzer):
                 # If it's a new IP, cache the mapping
                 self.ip_mac_table[sender_ip] = sender_mac
 
-            # Optional: Log standard traffic for debugging
+            # Log standard traffic for debugging
             op_text = "REQUEST" if operation == 1 else "REPLY"
             print(f"[*][ARP {op_text}] {sender_ip} is at {sender_mac}")
 

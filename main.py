@@ -7,7 +7,7 @@ from udp_analyze import UDPAnalyzer
 from dhcp_analyze import DHCPAnalyzer
 
 
-local_router = '192.168.1.1'
+local_router = '192.168.x.x' #PLACEHOLDER CHANGE
 
 def main():
     # 1. Define configuration constants

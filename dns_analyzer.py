@@ -7,17 +7,13 @@ class DNSAnalyzer(PacketAnalyzer):
         super().__init__(interface=interface, bpf_filter="udp port 53")
         self.allowed_dns_ip = allowed_dns_ip
 
-    def dns_leak(self, packet, dst_ip, src_ip):
-        if packet.haslayer(DNS) and packet[DNS].qr == 0:
-            if packet[DNS].qd:
-                domain = packet[DNS].qd.qname.decode('UTF-8')
-            if dst_ip not in self.allowed_dns_ip:
-                    print(f" LEAK! {src_ip} requested '{domain}' via unapproved DNS: {dst_ip}")
-            else:
-                print(f" SECURE {src_ip} requested '{domain}' via {dst_ip}")
-
+    
+    def check_dns_leak(self, packet, dst_ip, src_ip):
+        # Return True if destination IP is not in approved list
+        return dst_ip not in self.allowed_dns_ip
 
     def get_packet_type(self, packet) -> str:
+        # Distinguish between a query and response type
         if packet.haslayer(DNS):
             qr = packet[DNS].qr
             if qr == 0:
@@ -27,14 +23,24 @@ class DNSAnalyzer(PacketAnalyzer):
         return "UNKNOWN"
 
 
-    def format_packet_log(self, packet_type, src_ip, dst_ip, packet):
-        # A clean, single template that adapts based on the live packet type
-        divider = "-" * 60
-        
+    def format_packet_log(self, packet, src_ip, dst_ip):
+        divider = "-" * 60  
+        packet_type = self.get_packet_type(packet)
         # Safely grab the domain name if a query exists
         domain = "N/A"
-        if packet.haslayer(DNS) and packet[DNS].qd:
-            domain = packet[DNS].qd.qname.decode('UTF-8')
+        if packet.haslayer(DNS) and packet[DNS].qd and packet[DNS].qd.qname:
+            try:
+                domain = packet[DNS].qd.qname.decode('UTF-8').rstrip('.')
+            except Exception:
+                domain = str(packet[DNS].qd.qname)
+
+        # Check for unapproved DNS servers on queries
+        leak_warning = ""
+        if packet_type == "QUERY" and packet[DNS].qr == 0:
+            if self.check_dns_leak(domain, dst_ip, src_ip):
+                leak_warning = f"\n[!] DNS LEAK WARNING: {src_ip} queried '{domain}' via unapproved DNS: {dst_ip}"
+            else:
+                leak_warning = f"\n[+] SECURE: {src_ip} queried '{domain}' via approved DNS: {dst_ip}"
 
         log_output = f"""
         \n{divider}
@@ -42,6 +48,10 @@ class DNSAnalyzer(PacketAnalyzer):
         \nTYPE: {packet_type} | Flow: {src_ip} ---> {dst_ip}
         \nDOMAIN: {domain}
         """
+
+        if leak_warning:
+            log_output += f"{leak_warning}"
+
         print(log_output)
    
     def analyze(self, packet):
@@ -49,19 +59,6 @@ class DNSAnalyzer(PacketAnalyzer):
             src_ip = packet[IP].src
             dst_ip = packet[IP].dst
 
-            dns_pkt = packet[DNS]
-            dns_qd = dns_pkt.qd
-            dns_qr = dns_pkt.qr
-
-
-            dns_id = dns_pkt.id
-            dns_an = dns_pkt.an
-            dns_ns = dns_pkt.ns
-            dns_ar = dns_pkt.ar
-
-
-            dns_leak = self.dns_leak(packet, dst_ip, src_ip)
-            packet_type = self.get_packet_type(packet)
-            self.format_packet_log(packet_type, src_ip, dst_ip, packet)
+            self.format_packet_log(packet, src_ip, dst_ip)
 
                                 

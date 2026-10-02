@@ -5,8 +5,10 @@ from scapy.all import *
 class TCPAnalyzer(PacketAnalyzer):
     def __init__(self, interface: str):
         super().__init__(interface=interface, bpf_filter="tcp")
+        #Track TCP connection states
         self.TCP_STATES = {}
 
+    #bidirectional key for TCP sessions
     def get_connection_key(self, packet):
         ip = packet[IP]
         tcp = packet[TCP]
@@ -37,7 +39,7 @@ class TCPAnalyzer(PacketAnalyzer):
         flags = tcp.flags
         flag_str = self.get_flag_str(flags)
 
-        # Smart initialization: Allow mid-stream joins by defaulting to ESTABLISHED
+        #Allow mid-stream joins by defaulting to ESTABLISHED
         if conn_key not in self.TCP_STATES:
             if flag_str == "S":
                 self.TCP_STATES[conn_key] = "SYN_SENT"
