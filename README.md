@@ -38,3 +38,9 @@ pip install -r requirements.txt
 
 # 3. Run the sniffer with root privileges
 sudo python main.py
+
+
+
+https://github.com/user-attachments/assets/bf8a6471-8a92-4185-8e4e-76523d63e25c
+
+
