@@ -27,3 +27,14 @@ A lightweight, object-oriented network security sniffer written in Python using 
 ├── dhcp_analyze.py     # DHCP lease option parser
 ├── arp_analyze.py      # ARP table monitor and spoofing detector
 └── requirements.txt    # Project dependencies
+```
+
+## Usage
+
+# 1. Install dependencies 
+pip install -r requirements.txt
+
+# 2. Set local router and interface preferences in main.py
+
+# 3. Run the sniffer with root privileges
+sudo python main.py
